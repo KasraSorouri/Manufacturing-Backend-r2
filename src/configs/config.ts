@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const PORT = process.env.PORT;
-const DATABASE_URI = process.env.NODE_ENV === 'test'
+const DATABASE_URI: string | undefined= process.env.NODE_ENV === 'test'
   ? process.env.TEST_DATABASE_URI
   : process.env.DATABASE_URI;
 
