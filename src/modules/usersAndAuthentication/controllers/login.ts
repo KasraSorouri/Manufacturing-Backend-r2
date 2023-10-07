@@ -3,7 +3,7 @@ import { Request, Response } from 'express';
 import authService from '../services/authService';
 
 import { UserCredentials } from '../types';
-import { credentialsProcessor } from '../utils/userProcessor';
+import { credentialsProcessor } from '../utils/dataProcessor';
 
 const login = async(req: Request, res: Response): Promise<void> => {
   const credential = credentialsProcessor(req.body);

@@ -18,7 +18,10 @@ export interface Role {
   id: number;
   roleName: string;
   active: boolean;
-  rights: string[];
+}
+
+export interface RoleWithRights extends Role {
+  rights?: string[];
 }
 
 export interface Right {
@@ -58,3 +61,16 @@ export type UserCredentials = {
   lastName?: string,
   roles?: string[]
 };
+
+export type Token = {
+  id: number,
+  username: string,
+  roles?: string[],
+  rights?: string[],
+};
+
+export interface NewRole extends Omit<Role,'id'> {
+  rights?: number[];
+}
+
+export type NewRight = Omit<Right,'id'>; 
