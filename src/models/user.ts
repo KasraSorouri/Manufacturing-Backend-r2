@@ -4,13 +4,19 @@ import { sequelize } from '../configs/db';
 import Role from './role';
 
 class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
+  addRoles(_roles: Role[]) {
+    throw new Error('Method not implemented.');
+  }
+  setRoles(_arg0: never[]) {
+    throw new Error('Method not implemented.');
+  }
   declare id: CreationOptional<number>;
   declare username: string;
   declare password: string;
   declare firstName: string;
   declare lastName: string;
   declare active: boolean;
-  declare roles?: Role[];
+  declare roles?: CreationOptional<Role[]>;
   declare dateCreated : CreationOptional<Date>;
 }
 
@@ -26,21 +32,21 @@ User.init({
     unique: true
   },
   password: {
-    type: DataTypes.TEXT,
+    type: DataTypes.STRING,
     allowNull: false
   },
   firstName: {
-    type: DataTypes.TEXT,
+    type: DataTypes.STRING,
   },
   lastName: {
-    type: DataTypes.TEXT
+    type: DataTypes.STRING
   },
   active: {
     type: DataTypes.BOOLEAN
   },
   dateCreated: {
     type: DataTypes.DATE
-  }
+  },
 }, {
   sequelize,
   underscored: true,

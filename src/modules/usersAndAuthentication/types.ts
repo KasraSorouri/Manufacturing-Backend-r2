@@ -12,15 +12,17 @@ export interface User {
   firstName: string;
   lastName: string;
   active: boolean;
+  roles?: Role[];
 }
 
 export interface Role {
   id: number;
   roleName: string;
   active: boolean;
+  rights?: Right[];
 }
 
-export interface RoleWithRights extends Role {
+export interface RoleWithRights extends Omit<Role, 'rights'> {
   rights?: string[];
 }
 
@@ -30,22 +32,18 @@ export interface Right {
   relatedModule: string;
 }
 
-export interface UserWithRole extends User {
-  roles?: string[];
-} 
-
-export interface UserWithRights extends User {
+export interface UserWithRights extends Omit<User, 'roles'> {
   roles?: string[];
   rights?: string[];
 } 
 
-export interface UserData extends Omit<User,'id'> {
+export interface UserData extends Omit<User,'id' | 'roles' | 'rights'> {
   password?: string;
   roles?: number[];
   rights?: number[];
 }
 
-export interface NewUser extends Omit<UserData,'roles'> {
+export interface NewUser extends Omit<UserData, 'roles' | 'rights'> {
   password: string;
 }
 
@@ -69,7 +67,7 @@ export type Token = {
   rights?: string[],
 };
 
-export interface NewRole extends Omit<Role,'id'> {
+export interface NewRole extends Omit<Role,'id' | 'rights'> {
   rights?: number[];
 }
 

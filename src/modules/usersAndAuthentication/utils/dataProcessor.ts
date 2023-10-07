@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt';
 
-import { NewUser, UserData, Credential, NewRole, NewRight } from '../types';
+import { NewUser, UserData, Credential, NewRole, NewRight, UserWithRights, User, Role, RoleWithRights } from '../types';
 import { isString, isNumber, isBoolean, stringLengthCheck } from '../../../utils/dataValidator';
 
 const parseUsername = (username: unknown): string => {
@@ -149,9 +149,32 @@ const rightProcessor = (rightData: unknown): NewRight => {
   }
 };
 
+const parseUserResponse = (userData: User): UserWithRights => {
+  return ({
+    id: userData.id,
+    username: userData.username,
+    firstName: userData.firstName,
+    lastName: userData.lastName, 
+    active: userData.active,
+    roles: userData.roles ? userData.roles.map(role => role.roleName) : [],
+    rights: (userData.roles?.flatMap(role => role.rights?.map(right => right.right))?? []).filter((right): right is string => typeof right === 'string')
+  });
+};
+
+const parseRoleResponse = (roleData: Role): RoleWithRights => {
+  return ({
+    id: roleData.id,
+    roleName: roleData.roleName,
+    active: roleData.active,
+    rights: roleData.rights ? roleData.rights.map(role => role.right) : [],
+  });
+};
+
 export {
   userProcessor,
   roleProcessor,
   rightProcessor,
+  parseUserResponse,
+  parseRoleResponse,
   credentialsProcessor
 };

@@ -1,76 +1,62 @@
-import { User, Role, Right } from '../../../models';
-import { NewUser, UserWithRights, UserWithRole } from '../types';
-import  { userProcessor } from '../utils/dataProcessor';
+import { User, Role, Right, UserQuery } from '../../../models';
+import { NewUser, UserWithRights } from '../types';
+import { parseUserResponse, userProcessor } from '../utils/dataProcessor';
 
-// Get All users
-const getAllUsers = async(): Promise<UserWithRole[]> => {
-  const users = await User.findAll({
-    attributes : { exclude: ['password', 'userRoles'] },
-    include: {
-      model: Role,
-      attributes: ['roleName'],
+// Define user query 
+const query : UserQuery = {
+  attributes : { exclude: ['password', 'userRoles'] },
+  include: [{
+    model: Role,
+    as: 'roles',
+    attributes: ['roleName'],
+    through: {
+      attributes: []
+    },
+    include: [{
+      model: Right,
+      as: 'rights',
+      attributes: ['right'],
       through: {
         attributes: []
-      }
-    }
-  });
+      },
+    }]
+  }]
+};
+
+// Get All users
+const getAllUsers = async(): Promise<UserWithRights[]> => {
+
+  const users = await User.findAll(query);
   
-  const result: UserWithRole[] = users.map(user => ({
-    id: user.id,
-    username: user.username,
-    firstName: user.firstName,
-    lastName: user.lastName, 
-    active: user.active,
-    roles: user.roles ? user.roles.map(role => role.roleName) : [],
-  }));
+  const result: UserWithRights[] = [];
+  users.map(user => {
+    result.push(parseUserResponse(user));
+  });
   return result;
 };
 
 // Get a user based on ID
 const getUser = async(id: number): Promise<UserWithRights> => {
-  const user = await User.findByPk(id, {
-    attributes: { exclude: ['password', 'userRoles'] },
-    include: [{
-      model: Role,
-      attributes: ['roleName'],
-      through: {
-        attributes: []
-      },
-      include: [{
-        model: Right,
-        through: {
-          attributes: [] 
-        },
-      }]
-    },
-  ]
-  });
+  const user = await User.findByPk(id,query);
   if (!user) {
     throw new Error ('the user not found');
   }
   
-  const result: UserWithRights = {
-    id: user.id,
-    username: user.username,
-    firstName: user.firstName,
-    lastName: user.lastName, 
-    active: user.active,
-    roles: user.roles?.map(role => role.roleName),
-    rights: (user.roles?.flatMap(role => role.rights?.map(right => right.right))?? []).filter((right): right is string => typeof right === 'string')
-  };
+  const result = parseUserResponse(user);
   return result;
 };
 
 // Create a new user
 const createUser = async (userData: unknown): Promise<User> => {
-  const newUser = await userProcessor(userData);
-  if ('password' in newUser ) {
+  const newUserData = await userProcessor(userData);
+  if ('password' in newUserData) {
     try {
-      const user = await User.create(newUser as NewUser);
-      //if ('roles' in newUser) {
-      //  updateUserRoles({ id : user.id, roles: userData.roles })
-      //}
-      return user;
+      const newUser = await User.create(newUserData as NewUser);
+      if ('roles' in newUserData && newUserData.roles && newUserData.roles.length > 0) {
+        const { roles } = newUserData; 
+        await updateUserRoles(newUser.id, roles);
+      }
+      return newUser;
     } catch(err : unknown) {
       let errorMessage = 'Something went wrong.';
       if (err instanceof Error) {
@@ -98,43 +84,37 @@ const updateUser = async ({ id, userData }) => {
     throw new Error(err.original.detail)
   }
 }
+*/
+const updateUserRoles = async (id: number, roles: number[]): Promise<UserWithRights> => {
 
-const updateUserRoles = async ({ id, roles }) => {
-
-  const user = await User.findByPk(id)
+  const user = await User.findByPk(id);
   if (!user) {
-    throw new Error('user not found')
+    throw new Error('user not found');
   }
-  await user.setRoles([])
-  const okRoles = await Role.findAll({ where: { id: [...roles], active: true } })
+  user.setRoles([]);
+  const okRoles = await Role.findAll({ where: { id: [...roles], active: true } });
   if (okRoles.length === 0) {
-    throw new Error('no Active role found')
+    throw new Error('no Active role found');
   }
   try {
-    await user.addRoles(okRoles)
-    const result = await User.findByPk(id,{
-      attributes : { exclude: ['password', 'userRoles'] },
-      include: {
-        model: Role,
-        attributes: ['roleName'],
-        through: {
-          attributes: []
-        },
-        include: {
-          model: Right,
-          attributes: ['right'],
-          through: {
-            attributes: []
-          },
-        }
-      }
-    })
-    return result
+    user.addRoles(okRoles);
+    const createdUser = await User.findByPk(id,query);
+
+    if (!createdUser) {
+      throw new Error ('the user not found');
+    }
+    const result = parseUserResponse(createdUser);
+
+    return result;
   } catch (err) {
-    throw new Error('Something wrong happend, Check user\'s roles again')
+    let errorMessage = 'Something went wrong. Check user\'s roles again';
+    if (err instanceof Error) {
+      errorMessage += ' Error: ' + err.message;
+    }
+    throw new Error(errorMessage);
   }
-}
-*/
+};
+
 export default {
   getAllUsers,
   getUser,

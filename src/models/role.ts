@@ -4,10 +4,16 @@ import { sequelize } from '../configs/db';
 import Right from './right';
 
 class Role extends Model<InferAttributes<Role>, InferCreationAttributes<Role>> {
+  addRights(_rights: Right[]) {
+    throw new Error('Method not implemented.');
+  }
+  setRights(_arg0: never[]) {
+    throw new Error('Method not implemented.');
+  }
   declare id: CreationOptional<number>;
   declare roleName: string;
   declare active: boolean;
-  declare rights?: Right[];
+  declare rights?: CreationOptional<Right[]>;
 }
 
 Role.init({

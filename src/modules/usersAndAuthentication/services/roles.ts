@@ -1,38 +1,34 @@
-import { Role, Right } from '../../../models';
+import { Role, Right, RoleQuery } from '../../../models';
 import { RoleWithRights } from '../types';
-import { roleProcessor } from '../utils/dataProcessor';
+import { parseRoleResponse, roleProcessor } from '../utils/dataProcessor';
+
+// Define role query 
+const query : RoleQuery = {
+  attributes : { exclude: ['password', 'userRoles'] },
+  include: [{
+    model: Right,
+    as: 'rights',
+    attributes: ['right'],
+    through: {
+      attributes: []
+    },
+  }]
+};
 
 // Get All roles
 const getAllRoles = async(): Promise<RoleWithRights[]> => {
-  const roles = await Role.findAll({
-    include: {
-      model: Right,
-      through: {
-        attributes: []
-      }
-    }
+  const roles = await Role.findAll(query);
+
+  const result: RoleWithRights[] = [];
+  roles.map(role => {
+    result.push(parseRoleResponse(role));
   });
- 
-  const result: RoleWithRights[] = roles.map(role => ({
-    id: role.id,
-    roleName: role.roleName,
-    active: role.active,
-    rights: role.rights ? role.rights.map(role => role.right) : [],
-  }));
   return result;
 };
 
 // Get a role based on ID
 const getRole = async(id: number): Promise<RoleWithRights> => {
-  const role = await Role.findByPk(id, {
-    include: [{
-      model: Right,
-      through: {
-        attributes: []
-      },
-    },
-  ]
-  });
+  const role = await Role.findByPk(id, query);
   if (!role) {
     throw new Error ('the role not found');
   }
