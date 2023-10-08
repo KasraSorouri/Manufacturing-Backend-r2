@@ -16,9 +16,8 @@ router.get('/:id', userControllers.getUser);
 router.post('/', tokenExtractor, roleAuthority(['ADMIN']), userControllers.addUser);
 
 // Edit User
-//router.put('/:id', tokenExtractor, roleAuthority(['ADMIN']), userControllers.editUser);
+// eslint-disable-next-line @typescript-eslint/no-misused-promises
+router.put('/:id', tokenExtractor, roleAuthority(['ADMIN']), userControllers.editUser);
 
-// Assign Roles
-//router.post('/:id/roles', tokenExtractor, roleAuthority(['ADMIN']) , userControllers.assignRoles);
 
 export default router;

@@ -35,7 +35,7 @@ export interface Right {
 export interface UserWithRights extends Omit<User, 'roles'> {
   roles?: string[];
   rights?: string[];
-} 
+}
 
 export interface UserData extends Omit<User,'id' | 'roles' | 'rights'> {
   password?: string;
@@ -46,6 +46,8 @@ export interface UserData extends Omit<User,'id' | 'roles' | 'rights'> {
 export interface NewUser extends Omit<UserData, 'roles' | 'rights'> {
   password: string;
 }
+
+export type UpdateUser = Omit<UserData, 'roles' | 'rights'>;
 
 export type Credential = {
   username: string,

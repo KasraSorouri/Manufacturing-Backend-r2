@@ -1,8 +1,8 @@
 import { User, Role, Right, UserQuery } from '../../../models';
-import { NewUser, UserWithRights } from '../types';
+import { NewUser, UpdateUser, UserWithRights } from '../types';
 import { parseUserResponse, userProcessor } from '../utils/dataProcessor';
 
-// Define user query 
+// Define User query 
 const query : UserQuery = {
   attributes : { exclude: ['password', 'userRoles'] },
   include: [{
@@ -23,7 +23,7 @@ const query : UserQuery = {
   }]
 };
 
-// Get All users
+// Get all Users
 const getAllUsers = async(): Promise<UserWithRights[]> => {
 
   const users = await User.findAll(query);
@@ -35,7 +35,7 @@ const getAllUsers = async(): Promise<UserWithRights[]> => {
   return result;
 };
 
-// Get a user based on ID
+// Get a User based on ID
 const getUser = async(id: number): Promise<UserWithRights> => {
   const user = await User.findByPk(id,query);
   if (!user) {
@@ -46,19 +46,22 @@ const getUser = async(id: number): Promise<UserWithRights> => {
   return result;
 };
 
-// Create a new user
+// Create a new User
 const createUser = async (userData: unknown): Promise<User> => {
   const newUserData = await userProcessor(userData);
+
   if ('password' in newUserData) {
     try {
       const newUser = await User.create(newUserData as NewUser);
-      if ('roles' in newUserData && newUserData.roles && newUserData.roles.length > 0) {
+      if ('roles' in newUserData && newUserData.roles) {
         const { roles } = newUserData; 
-        await updateUserRoles(newUser.id, roles);
+        const updatedUser = await updateUserRoles(newUser.id, roles);
+        return updatedUser;
+       } else {
+        return newUser;
       }
-      return newUser;
     } catch(err : unknown) {
-      let errorMessage = 'Something went wrong.';
+      let errorMessage = '';
       if (err instanceof Error) {
         errorMessage += ' Error: ' + err.message;
       }
@@ -67,45 +70,53 @@ const createUser = async (userData: unknown): Promise<User> => {
   } else {
     throw new Error('Incorrect or missing data!');
   }
-  
 };
-/*
-const updateUser = async ({ id, userData }) => {
-  const newData = await userProcessor(userData)
 
+// Update an User
+const updateUser = async (id: number, userData: unknown): Promise<User>=> {
+  const newUserData = await userProcessor(userData);
   try {
-    const user = await User.findByPk(id)
-    await user.update(newData)
-    if (userData.roles.length > 0) {
-      updateUserRoles({ id : user.id, roles: userData.roles })
+    const user = await User.findByPk(id);
+    if(!user) {
+      throw new Error('User not found!');
     }
-    return user
-  } catch(err) {
-    throw new Error(err.original.detail)
+    await user.update(newUserData as UpdateUser);
+    if ('roles' in newUserData && newUserData.roles) {
+      const { roles } = newUserData; 
+      const updatedUser = await updateUserRoles(id, roles);
+      return updatedUser;
+     } else {
+      return user;
+    }
+  } catch(err : unknown) {
+    let errorMessage = '';
+    if (err instanceof Error) {
+      errorMessage += ' Error: ' + err.message;
+    }
+    throw new Error(errorMessage);
   }
-}
-*/
-const updateUserRoles = async (id: number, roles: number[]): Promise<UserWithRights> => {
+};
+
+// Assign Roles to a User
+const updateUserRoles = async (id: number, roles: number[]): Promise<User> => {
 
   const user = await User.findByPk(id);
   if (!user) {
     throw new Error('user not found');
   }
-  user.setRoles([]);
+  
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call */
+await (user as any).setRoles([]);
   const okRoles = await Role.findAll({ where: { id: [...roles], active: true } });
-  if (okRoles.length === 0) {
-    throw new Error('no Active role found');
-  }
   try {
-    user.addRoles(okRoles);
-    const createdUser = await User.findByPk(id,query);
 
-    if (!createdUser) {
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call */
+await (user as any).addRoles(okRoles);
+    const updatedUser = await User.findByPk(id,query);
+    if (!updatedUser) {
       throw new Error ('the user not found');
     }
-    const result = parseUserResponse(createdUser);
-
-    return result;
+    return updatedUser;
   } catch (err) {
     let errorMessage = 'Something went wrong. Check user\'s roles again';
     if (err instanceof Error) {
@@ -119,6 +130,5 @@ export default {
   getAllUsers,
   getUser,
   createUser,
-  //updateUser,
-  //updateUserRoles
+  updateUser,
 };
